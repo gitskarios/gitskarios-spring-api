@@ -22,6 +22,19 @@ public class GithubIssueRepository implements IssueRepository {
     @Override
     public IssueResponse getIssue(String owner, String repo, Integer number) throws IOException {
         Issue issue = issueService.getIssue(owner, repo, number).execute().body();
+        List<GithubReaction> reactions = getAllReactions(owner, repo, number);
+
+        Map<String, List<User>> reactionsMap = new HashMap<>();
+        reactions.forEach(githubReaction -> {
+            if (reactionsMap.get(githubReaction.getContent()) == null) {
+                reactionsMap.put(githubReaction.getContent(), new ArrayList<>());
+            }
+
+            reactionsMap.get(githubReaction.getContent()).add(githubReaction.getUser());
+        });
+
+        issue.setReactions(reactionsMap);
+
         List<GithubComment> comments = getIssueComments(owner, repo, number);
         List<IssueEvent> events = getIssueEvents(owner, repo, number);
 
@@ -92,6 +105,28 @@ public class GithubIssueRepository implements IssueRepository {
 
     private Response<List<IssueEvent>> getEvents(String owner, String repo, Integer number, Integer page) throws IOException {
         return issueService.events(owner, repo, number, page).execute();
+    }
+
+    private List<GithubReaction> getAllReactions(String owner, String repo, Integer number) throws IOException {
+        Response<List<GithubReaction>> response = getReactions(owner, repo, number, null);
+        Integer pageFromResponse = getPageFromResponse(response);
+
+        List<GithubReaction> accumulate = new ArrayList<>();
+        if (response.body() != null) {
+            accumulate.addAll(response.body());
+        }
+        while (pageFromResponse != null) {
+            response = getReactions(owner, repo, number, pageFromResponse);
+            if (response.body() != null) {
+                accumulate.addAll(response.body());
+            }
+            pageFromResponse = getPageFromResponse(response);
+        }
+        return accumulate;
+    }
+
+    private Response<List<GithubReaction>> getReactions(String owner, String repo, Integer number, Integer page) throws IOException {
+        return issueService.issueReactions(owner, repo, number, page).execute();
     }
 
     private Integer getPageFromResponse(Response response) throws UnsupportedEncodingException {

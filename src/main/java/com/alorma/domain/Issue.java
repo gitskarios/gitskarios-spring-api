@@ -1,6 +1,9 @@
 package com.alorma.domain;
 
+import com.alorma.domain.response.GithubReactionResponse;
+
 import java.util.List;
+import java.util.Map;
 
 public class Issue {
     private long id;
@@ -11,6 +14,7 @@ public class Issue {
     private User user;
     private User assignee;
     private List<User> assignees;
+    private Map<String, List<User>> reactions;
 
     public long getId() {
         return id;
@@ -74,5 +78,13 @@ public class Issue {
 
     public void setAssignees(List<User> assignees) {
         this.assignees = assignees;
+    }
+
+    public Map<String, List<User>> getReactions() {
+        return reactions;
+    }
+
+    public void setReactions(Map<String, List<User>> reactions) {
+        this.reactions = reactions;
     }
 }
