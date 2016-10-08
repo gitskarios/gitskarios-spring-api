@@ -1,10 +1,7 @@
 package com.alorma.data;
 
 import com.alorma.data.github.IssueService;
-import okhttp3.Interceptor;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit2.Retrofit;
@@ -28,6 +25,12 @@ public class GithubConfiguration {
 
         builder.addHeader("User-Agent", "Gitskarios");
         builder.addHeader("Accept", "application/vnd.github.v3.json");
+
+        HttpUrl url = original.url();
+        HttpUrl.Builder newBuilder = url.newBuilder();
+
+        builder.url(newBuilder.build());
+
         builder.method(original.method(), original.body());
 
         return chain.proceed(builder.build());

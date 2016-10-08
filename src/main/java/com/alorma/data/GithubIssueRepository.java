@@ -1,11 +1,11 @@
 package com.alorma.data;
 
+import com.alorma.data.exception.UnauthorizedException;
 import com.alorma.data.github.IssueService;
 import com.alorma.domain.*;
 import com.alorma.domain.response.IssueResponse;
 import com.alorma.domain.response.IssueStory;
 import retrofit2.Response;
-import rx.Observable;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -20,95 +20,91 @@ public class GithubIssueRepository implements IssueRepository {
     }
 
     @Override
-    public IssueResponse getIssue(String owner, String repo, Integer number) throws IOException {
-        Issue issue = issueService.getIssue(owner, repo, number).execute().body();
-        List<GithubReaction> reactions = getAllReactions(owner, repo, number);
+    public IssueResponse getIssue(String owner, String repo, Integer number, String token) throws Exception {
+        token = "token " + token;
+        Response<Issue> issueResponse = issueService.getIssue(owner, repo, number, token).execute();
 
-        Map<String, List<User>> reactionsMap = new HashMap<>();
-        reactions.forEach(githubReaction -> {
-            if (reactionsMap.get(githubReaction.getContent()) == null) {
-                reactionsMap.put(githubReaction.getContent(), new ArrayList<>());
+        if (!issueResponse.isSuccessful()) {
+            switch (issueResponse.code()) {
+                case 401:
+                    throw new UnauthorizedException(issueResponse.errorBody().string());
+                default:
+                    throw new Exception(issueResponse.errorBody().string());
             }
+        } else {
+            Issue issue = issueResponse.body();
+            List<GithubReaction> reactions = getAllReactions(owner, repo, number, token);
 
-            reactionsMap.get(githubReaction.getContent()).add(githubReaction.getUser());
-        });
+            Map<String, List<User>> reactionsMap = new HashMap<>();
+            reactions.forEach(githubReaction -> {
+                if (reactionsMap.get(githubReaction.getContent()) == null) {
+                    reactionsMap.put(githubReaction.getContent(), new ArrayList<>());
+                }
 
-        issue.setReactions(reactionsMap);
+                reactionsMap.get(githubReaction.getContent()).add(githubReaction.getUser());
+            });
 
-        List<GithubComment> comments = getIssueComments(owner, repo, number);
-        List<IssueEvent> events = getIssueEvents(owner, repo, number);
+            issue.setReactions(reactionsMap);
 
-        List<GithubIssueStoryItem> items = new ArrayList<>();
-        items.addAll(comments);
-        items.addAll(events);
+            List<GithubComment> comments = getAllComments(owner, repo, number, token);
+            List<IssueEvent> events = getAllEvents(owner, repo, number, token);
 
-        Collections.sort(items, (o1, o2) -> {
-            if (o1.getTime() > o2.getTime()) {
-                return 1;
-            } else if (o1.getTime() > o2.getTime()) {
-                return 0;
-            } else {
-                return -1;
-            }
-        });
+            List<GithubIssueStoryItem> items = new ArrayList<>();
+            items.addAll(comments);
+            items.addAll(events);
 
-        return new IssueResponse(issue, new IssueStory(items));
+            Collections.sort(items, (o1, o2) -> {
+                if (o1.getTime() > o2.getTime()) {
+                    return 1;
+                } else if (o1.getTime() > o2.getTime()) {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            });
+
+            return new IssueResponse(issue, new IssueStory(items));
+        }
     }
 
-    @Override
-    public List<GithubComment> getIssueComments(String owner, String repo, Integer number) throws IOException {
-        return Observable.defer(() -> {
-            try {
-                return Observable.just(getAllComments(owner, repo, number));
-            } catch (IOException e) {
-                return Observable.error(e);
-            }
-        }).toBlocking().first();
-    }
-
-    private List<GithubComment> getAllComments(String owner, String repo, Integer number) throws IOException {
-        Response<List<GithubComment>> response = getComments(owner, repo, number, null);
+    private List<GithubComment> getAllComments(String owner, String repo, Integer number, String token) throws IOException {
+        Response<List<GithubComment>> response = getComments(owner, repo, number, token, null);
         Integer pageFromResponse = getPageFromResponse(response);
 
         List<GithubComment> accumulate = new ArrayList<>();
         accumulate.addAll(response.body());
         while (pageFromResponse != null) {
-            response = getComments(owner, repo, number, pageFromResponse);
+            response = getComments(owner, repo, number, token, pageFromResponse);
             accumulate.addAll(response.body());
             pageFromResponse = getPageFromResponse(response);
         }
         return accumulate;
     }
 
-    private Response<List<GithubComment>> getComments(String owner, String repo, Integer number, Integer page) throws IOException {
-        return issueService.comments(owner, repo, number, page).execute();
+    private Response<List<GithubComment>> getComments(String owner, String repo, Integer number, String token, Integer page) throws IOException {
+        return issueService.comments(owner, repo, number, token, page).execute();
     }
 
-    @Override
-    public List<IssueEvent> getIssueEvents(String owner, String repo, Integer number) throws IOException {
-        return getAllEvents(owner, repo, number);
-    }
-
-    private List<IssueEvent> getAllEvents(String owner, String repo, Integer number) throws IOException {
-        Response<List<IssueEvent>> response = getEvents(owner, repo, number, null);
+    private List<IssueEvent> getAllEvents(String owner, String repo, Integer number, String token) throws IOException {
+        Response<List<IssueEvent>> response = getEvents(owner, repo, number, token, null);
         Integer pageFromResponse = getPageFromResponse(response);
 
         List<IssueEvent> accumulate = new ArrayList<>();
         accumulate.addAll(response.body());
         while (pageFromResponse != null) {
-            response = getEvents(owner, repo, number, pageFromResponse);
+            response = getEvents(owner, repo, number, token, pageFromResponse);
             accumulate.addAll(response.body());
             pageFromResponse = getPageFromResponse(response);
         }
         return accumulate;
     }
 
-    private Response<List<IssueEvent>> getEvents(String owner, String repo, Integer number, Integer page) throws IOException {
-        return issueService.events(owner, repo, number, page).execute();
+    private Response<List<IssueEvent>> getEvents(String owner, String repo, Integer number, String token, Integer page) throws IOException {
+        return issueService.events(owner, repo, number, token, page).execute();
     }
 
-    private List<GithubReaction> getAllReactions(String owner, String repo, Integer number) throws IOException {
-        Response<List<GithubReaction>> response = getReactions(owner, repo, number, null);
+    private List<GithubReaction> getAllReactions(String owner, String repo, Integer number, String token) throws IOException {
+        Response<List<GithubReaction>> response = getReactions(owner, repo, number, token, null);
         Integer pageFromResponse = getPageFromResponse(response);
 
         List<GithubReaction> accumulate = new ArrayList<>();
@@ -116,7 +112,7 @@ public class GithubIssueRepository implements IssueRepository {
             accumulate.addAll(response.body());
         }
         while (pageFromResponse != null) {
-            response = getReactions(owner, repo, number, pageFromResponse);
+            response = getReactions(owner, repo, number, token, pageFromResponse);
             if (response.body() != null) {
                 accumulate.addAll(response.body());
             }
@@ -125,8 +121,8 @@ public class GithubIssueRepository implements IssueRepository {
         return accumulate;
     }
 
-    private Response<List<GithubReaction>> getReactions(String owner, String repo, Integer number, Integer page) throws IOException {
-        return issueService.issueReactions(owner, repo, number, page).execute();
+    private Response<List<GithubReaction>> getReactions(String owner, String repo, Integer number, String token, Integer page) throws IOException {
+        return issueService.issueReactions(owner, repo, number, token, page).execute();
     }
 
     private Integer getPageFromResponse(Response response) throws UnsupportedEncodingException {
