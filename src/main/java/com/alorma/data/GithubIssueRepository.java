@@ -2,7 +2,7 @@ package com.alorma.data;
 
 import com.alorma.data.github.IssueService;
 import com.alorma.domain.*;
-import com.alorma.domain.response.GithubCommentsResponse;
+import com.alorma.domain.response.IssueStory;
 import com.alorma.domain.response.IssueResponse;
 import retrofit2.Response;
 import rx.Observable;
@@ -26,7 +26,7 @@ public class GithubIssueRepository implements IssueRepository {
     public IssueResponse getIssue(String owner, String repo, Integer number) throws IOException {
         Issue issue = issueService.getIssue(owner, repo, number).execute().body();
         List<GithubComment> comments = getIssueComments(owner, repo, number);
-        return new IssueResponse(issue, new GithubCommentsResponse(comments));
+        return new IssueResponse(issue, new IssueStory(comments));
     }
 
     @Override

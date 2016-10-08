@@ -4,7 +4,7 @@ import com.alorma.data.github.IssueService;
 import com.alorma.domain.GithubComment;
 import com.alorma.domain.Issue;
 import com.alorma.domain.IssueRepository;
-import com.alorma.domain.response.GithubCommentsResponse;
+import com.alorma.domain.response.IssueStory;
 import com.alorma.domain.response.IssueResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,7 @@ public class RepositoryConfiguration {
                 Issue issue = new Issue();
                 issue.setTitle("Mock");
                 issue.setTitle("Title mock");
-                return new IssueResponse(issue, new GithubCommentsResponse());
+                return new IssueResponse(issue, new IssueStory());
             }
 
             @Override

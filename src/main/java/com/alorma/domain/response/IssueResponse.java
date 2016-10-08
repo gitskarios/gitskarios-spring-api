@@ -4,11 +4,11 @@ import com.alorma.domain.Issue;
 
 public class IssueResponse {
     private Issue issue;
-    private GithubCommentsResponse comments;
+    private IssueStory story;
 
-    public IssueResponse(Issue issue, GithubCommentsResponse comments) {
+    public IssueResponse(Issue issue, IssueStory story) {
         this.issue = issue;
-        this.comments = comments;
+        this.story = story;
     }
 
     public Issue getIssue() {
@@ -19,11 +19,11 @@ public class IssueResponse {
         this.issue = issue;
     }
 
-    public GithubCommentsResponse getComments() {
-        return comments;
+    public IssueStory getStory() {
+        return story;
     }
 
-    public void setComments(GithubCommentsResponse comments) {
-        this.comments = comments;
+    public void setStory(IssueStory story) {
+        this.story = story;
     }
 }
