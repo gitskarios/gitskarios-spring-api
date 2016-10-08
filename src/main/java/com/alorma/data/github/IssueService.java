@@ -2,6 +2,7 @@ package com.alorma.data.github;
 
 import com.alorma.domain.GithubComment;
 import com.alorma.domain.Issue;
+import com.alorma.domain.IssueEvent;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
@@ -15,5 +16,9 @@ public interface IssueService {
 
     @GET("/repos/{owner}/{name}/issues/{num}/comments")
     Call<List<GithubComment>> comments(@Path("owner") String owner, @Path("name") String repo, @Path("num") int num
+            , @Query("page") Integer page);
+
+    @GET("/repos/{owner}/{name}/issues/{num}/events")
+    Call<List<IssueEvent>> events(@Path("owner") String owner, @Path("name") String repo, @Path("num") int num
             , @Query("page") Integer page);
 }

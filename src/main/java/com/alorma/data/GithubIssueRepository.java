@@ -2,17 +2,14 @@ package com.alorma.data;
 
 import com.alorma.data.github.IssueService;
 import com.alorma.domain.*;
-import com.alorma.domain.response.IssueStory;
 import com.alorma.domain.response.IssueResponse;
+import com.alorma.domain.response.IssueStory;
 import retrofit2.Response;
 import rx.Observable;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GithubIssueRepository implements IssueRepository {
 
@@ -26,7 +23,23 @@ public class GithubIssueRepository implements IssueRepository {
     public IssueResponse getIssue(String owner, String repo, Integer number) throws IOException {
         Issue issue = issueService.getIssue(owner, repo, number).execute().body();
         List<GithubComment> comments = getIssueComments(owner, repo, number);
-        return new IssueResponse(issue, new IssueStory(comments));
+        List<IssueEvent> events = getIssueEvents(owner, repo, number);
+
+        List<GithubIssueStoryItem> items = new ArrayList<>();
+        items.addAll(comments);
+        items.addAll(events);
+
+        Collections.sort(items, (o1, o2) -> {
+            if (o1.getTime() > o2.getTime()) {
+                return 1;
+            } else if (o1.getTime() > o2.getTime()) {
+                return 0;
+            } else {
+                return -1;
+            }
+        });
+
+        return new IssueResponse(issue, new IssueStory(items));
     }
 
     @Override
@@ -58,7 +71,30 @@ public class GithubIssueRepository implements IssueRepository {
         return issueService.comments(owner, repo, number, page).execute();
     }
 
-    private Integer getPageFromResponse(Response<List<GithubComment>> response) throws UnsupportedEncodingException {
+    @Override
+    public List<IssueEvent> getIssueEvents(String owner, String repo, Integer number) throws IOException {
+        return getAllEvents(owner, repo, number);
+    }
+
+    private List<IssueEvent> getAllEvents(String owner, String repo, Integer number) throws IOException {
+        Response<List<IssueEvent>> response = getEvents(owner, repo, number, null);
+        Integer pageFromResponse = getPageFromResponse(response);
+
+        List<IssueEvent> accumulate = new ArrayList<>();
+        accumulate.addAll(response.body());
+        while (pageFromResponse != null) {
+            response = getEvents(owner, repo, number, pageFromResponse);
+            accumulate.addAll(response.body());
+            pageFromResponse = getPageFromResponse(response);
+        }
+        return accumulate;
+    }
+
+    private Response<List<IssueEvent>> getEvents(String owner, String repo, Integer number, Integer page) throws IOException {
+        return issueService.events(owner, repo, number, page).execute();
+    }
+
+    private Integer getPageFromResponse(Response response) throws UnsupportedEncodingException {
         String link = response.headers().get("Link");
         if (link != null) {
             String[] parts = link.split(",");

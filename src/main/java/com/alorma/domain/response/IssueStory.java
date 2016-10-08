@@ -1,29 +1,29 @@
 package com.alorma.domain.response;
 
-import com.alorma.domain.GithubComment;
+import com.alorma.domain.GithubIssueStoryItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class IssueStory {
-    private int total_count;
-    private List<GithubComment> comments;
+    private int total_events_count;
+    private List<GithubIssueStoryItem> events;
 
     public IssueStory() {
-        this.total_count = 0;
-        this.comments = new ArrayList<>();
+        this.total_events_count = 0;
+        this.events = new ArrayList<>();
     }
 
-    public IssueStory(List<GithubComment> comments) {
-        this.total_count = comments.size();
-        this.comments = comments;
+    public IssueStory(List<GithubIssueStoryItem> events) {
+        this.total_events_count = events.size();
+        this.events = events;
     }
 
-    public int getTotal_count() {
-        return total_count;
+    public int getTotal_events_count() {
+        return total_events_count;
     }
 
-    public List<GithubComment> getComments() {
-        return comments;
+    public List<GithubIssueStoryItem> getEvents() {
+        return events;
     }
 }
