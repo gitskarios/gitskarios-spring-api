@@ -1,7 +1,5 @@
 package com.alorma.domain;
 
-import com.alorma.domain.User;
-
 import java.util.List;
 
 public class Issue {

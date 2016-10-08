@@ -1,7 +1,11 @@
 package com.alorma.domain;
 
+import com.alorma.domain.response.IssueResponse;
+
 import java.io.IOException;
+import java.util.List;
 
 public interface IssueRepository {
-    Issue getIssue(String owner, String repo, Integer number) throws IOException;
+    IssueResponse getIssue(String owner, String repo, Integer number) throws IOException;
+    List<GithubComment> getIssueComments(String owner, String repo, Integer number) throws IOException;
 }
